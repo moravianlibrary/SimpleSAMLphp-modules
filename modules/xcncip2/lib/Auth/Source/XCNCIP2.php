@@ -58,10 +58,10 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 							htmlspecialchars($username) .
 						'</ns1:AuthenticationInputData>' .
 						'<ns1:AuthenticationDataFormatType>' .
-							'text' .
+							'text/plain' .
 						'</ns1:AuthenticationDataFormatType>' .
 						'<ns1:AuthenticationInputType>' .
-							'Username' .
+							'User Id' .
 						'</ns1:AuthenticationInputType>' .
 					'</ns1:AuthenticationInput>' .
 					'<ns1:AuthenticationInput>' .
@@ -69,7 +69,7 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 							htmlspecialchars($password) .
 						'</ns1:AuthenticationInputData>' .
 						'<ns1:AuthenticationDataFormatType>' .
-							'text' .
+							'text/plain' .
 						'</ns1:AuthenticationDataFormatType>' .
 						'<ns1:AuthenticationInputType>' .
 							'Password' .
