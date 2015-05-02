@@ -7,6 +7,7 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 
 	public function __construct($info, &$config) {
 		parent::__construct($info, $config);
+
 		$this->url = $config['url'];
 		$this->eduPersonScopedAffiliation = $config['eduPersonScopedAffiliation'];
 	}
@@ -21,6 +22,17 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 
 			$userId = (String) $response->xpath(
 					'ns1:LookupUserResponse/ns1:UserId/ns1:UserIdentifierValue')[0];
+
+			if(empty($userId)) {
+				throw new Exception('UserId was not found - cannot continue without user\'s Institution Id Number');
+			}
+
+			$agencyId = (String) $response->xpath(
+					'ns1:LookupUserResponse/ns1:UserId/ns1:AgencyId')[0];
+
+			if(empty($agencyId)) {
+				throw new Exception('AgencyId was not found - cannot continue authenticating without SIGLA');
+			}
 
 			$electronicAddresses = $response->xpath(
 					'ns1:LookupUserResponse/ns1:UserOptionalFields/ns1:UserAddressInformation/ns1:ElectronicAddress'
@@ -47,6 +59,7 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 					'givenName' => array($firstname),
 					'sn' => array($lastname),
 					'pw' => array($password),
+					'homeLib' => array($agencyId),
 				    );
 		} else {
 			throw new SimpleSAML_Error_Error('WRONGUSERPASS');
