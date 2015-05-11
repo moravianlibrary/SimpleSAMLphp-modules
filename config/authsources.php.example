@@ -1,0 +1,28 @@
+<?php
+
+$config = array(
+    
+    'crypto-hash' => array(
+        'authcrypt:Hash',
+        // hashed version of 'hackme', made with bin/pwgen.php
+        'professor:{SSHA512}BFNzzWV+ErbiATUc5G1wJwN7xzdCmMQktkGc293ETK8F4NUcueE0D2d4sVdg202l4uGfZnyTRhI90O2npTAP1BDrlDNosMPc' => array(
+            'uid' => array('prof_a'),
+            'eduPersonAffiliation' => array('member', 'employee', 'board'),
+        ),
+    ),
+
+
+    'xcncip2-Aleph' => array(
+	'xcncip2:XCNCIP2',
+	'url' => 'https://cpk-back.mzk.cz:8443/aleph-web/NCIPResponder',
+	'eduPersonScopedAffiliation' => array('member'),
+	'trustSSLHost' => 0,
+    ),
+
+    'xcncip2-Koha' => array(
+	'xcncip2:XCNCIP2',
+	'url' => 'https://cpk-back.mzk.cz:8443/koha-web/NCIPResponder',
+	'eduPersonScopedAffiliation' => array('member'),
+	'trustSSLHost' => 1,
+    ),
+);

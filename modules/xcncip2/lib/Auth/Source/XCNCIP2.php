@@ -3,12 +3,15 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 
 	protected $url;
 
+        protected $trustSSLHost;
+
 	protected $eduPersonScopedAffiliation;
 
 	public function __construct($info, &$config) {
 		parent::__construct($info, $config);
 
 		$this->url = $config['url'];
+		$this->trustSSLHost = $config['trustSSLHost'];
 		$this->eduPersonScopedAffiliation = $config['eduPersonScopedAffiliation'];
 	}
 
@@ -37,6 +40,8 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 			$electronicAddresses = $response->xpath(
 					'ns1:LookupUserResponse/ns1:UserOptionalFields/ns1:UserAddressInformation/ns1:ElectronicAddress'
 					);
+
+			$mail = null;
 			foreach ($electronicAddresses as $recent) {
 				if (strpos((String) $recent->xpath('ns1:ElectronicAddressType')[0], 'mail') !== FALSE) {
 					$mail = (String) $recent->xpath('ns1:ElectronicAddressData')[0];
@@ -52,13 +57,12 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 					'ns1:LookupUserResponse/ns1:UserOptionalFields/ns1:NameInformation/' .
 					'ns1:PersonalNameInformation/ns1:StructuredPersonalUserName/ns1:Surname')[0];
 			return array(
-					'userId' => array($username),
+					'eduPersonPrincipalName' => array($username),
 					'eduPersonScopedAffiliation' => $this->eduPersonScopedAffiliation,
-					'eduPersonPrincipalName' => array($userId),
+					'userId' => array($userId),
 					'mail' => array($mail),
 					'givenName' => array($firstname),
 					'sn' => array($lastname),
-					'pw' => array($password),
 					'homeLib' => array($agencyId),
 				    );
 		} else {
@@ -75,6 +79,12 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 					'Content-type: application/xml; charset=utf-8',
 					));
 		curl_setopt($req, CURLOPT_POSTFIELDS, $body);
+
+		if ($this->trustSSLHost) {
+			curl_setopt($req, CURLOPT_SSL_VERIFYHOST, 0);
+			curl_setopt($req, CURLOPT_SSL_VERIFYPEER, 0);
+		}
+		
 		$response = curl_exec($req);
 		$result = simplexml_load_string($response);
 		if (is_a($result, 'SimpleXMLElement')) {
