@@ -10,6 +10,10 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 	public function __construct($info, &$config) {
 		parent::__construct($info, $config);
 
+		$fullname = $config['fullname'];
+		print("<fullname value=\"$fullname\"></fullname>"); // Will be removed later by jQuery
+		// It is being used to set later the Title based on authsource choosed ..
+
 		$this->url = $config['url'];
 		$this->trustSSLHost = $config['trustSSLHost'];
 		$this->eduPersonScopedAffiliation = $config['eduPersonScopedAffiliation'];
