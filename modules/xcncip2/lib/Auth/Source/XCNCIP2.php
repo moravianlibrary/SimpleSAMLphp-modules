@@ -63,7 +63,7 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 			return array(
 					'eduPersonPrincipalName' => array($username),
 					'eduPersonScopedAffiliation' => $this->eduPersonScopedAffiliation,
-					'userId' => array($userId),
+					'userLibraryId' => array($userId),
 					'mail' => array($mail),
 					'givenName' => array($firstname),
 					'sn' => array($lastname),
