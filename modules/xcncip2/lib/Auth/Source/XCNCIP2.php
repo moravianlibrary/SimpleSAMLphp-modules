@@ -5,6 +5,8 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 
         protected $trustSSLHost;
 
+	protected $certificateAuthority;
+
 	protected $eduPersonScopedAffiliation;
 
 	public function __construct($info, &$config) {
@@ -16,6 +18,7 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 
 		$this->url = $config['url'];
 		$this->trustSSLHost = $config['trustSSLHost'];
+		$this->certificateAuthority = $config['certificateAuthority'];
 		$this->eduPersonScopedAffiliation = $config['eduPersonScopedAffiliation'];
 	}
 
@@ -87,10 +90,17 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 		if ($this->trustSSLHost) {
 			curl_setopt($req, CURLOPT_SSL_VERIFYHOST, 0);
 			curl_setopt($req, CURLOPT_SSL_VERIFYPEER, 0);
+		} else {
+			curl_setopt($req, CURLOPT_VERBOSE, 1);
+			curl_setopt($req, CURLOPT_CERTINFO, 1);
+
+			if (!empty($this->certificateAuthority)) 
+				curl_setopt($req, CURLOPT_CAINFO, $this->certificateAuthority);
 		}
 		
 		$response = curl_exec($req);
 		$result = simplexml_load_string($response);
+
 		if (is_a($result, 'SimpleXMLElement')) {
 			$result->registerXPathNamespace('ns1', 'http://www.niso.org/2008/ncip');
 			return $result;
