@@ -3,6 +3,8 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 
 	protected $url;
 
+	protected $eppnScope;
+
         protected $trustSSLHost;
 
 	protected $certificateAuthority;
@@ -17,6 +19,12 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 		// It is being used to set later the Title based on authsource choosed ..
 
 		$this->url = $config['url'];
+		$this->eppnScope = $config['eppnScope'];
+
+		if(empty($this->eppnScope)) {
+			throw new SimpleSAML_Error_Exception('Cannot have eppnScope empty! .. You have to set it in authsource.php');
+		}
+
 		$this->trustSSLHost = $config['trustSSLHost'];
 		$this->certificateAuthority = $config['certificateAuthority'];
 		$this->eduPersonScopedAffiliation = $config['eduPersonScopedAffiliation'];
@@ -64,7 +72,7 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 					'ns1:LookupUserResponse/ns1:UserOptionalFields/ns1:NameInformation/' .
 					'ns1:PersonalNameInformation/ns1:StructuredPersonalUserName/ns1:Surname')[0];
 			return array(
-					'eduPersonPrincipalName' => array($username),
+					'eduPersonPrincipalName' => array($username . '@' . $this->eppnScope),
 					'eduPersonScopedAffiliation' => $this->eduPersonScopedAffiliation,
 					'userLibraryId' => array($userId),
 					'mail' => array($mail),
