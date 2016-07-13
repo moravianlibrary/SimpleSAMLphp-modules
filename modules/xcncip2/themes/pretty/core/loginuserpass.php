@@ -1,152 +1,238 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" dir="ltr" data-tldr="true">
+<head>
+	<title><?php echo $this->t('{login:user_pass_header}'); ?></title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<!--	<meta http-equiv="x-xrds-location" content="<?php echo SimpleSAML_Module::getModuleURL('xcncip2/xrds.xml'); ?>" /> -->
+
+	<link rel='stylesheet' href="<?php echo SimpleSAML_Module::getModuleURL('xcncip2/global.css?v0'); ?>" type='text/css' />
+	<!--[if IE]><style type="text/css">#login h1 a { margin-top: 35px; } #login #login_error { margin-bottom: 10px; }</style><![endif]--><!-- Curse you, IE! -->
+
+	<script type="text/javascript">
+		function focusit() {
+			document.getElementById('username').focus();
+		}
+		window.onload = focusit;
+	</script>
+</head>
+<body class="login">
+
 <?php
-$this->data['header'] = $this->t('{login:user_pass_header}');
 
-if (strlen($this->data['username']) > 0) {
-	$this->data['autofocus'] = 'password';
-} else {
-	$this->data['autofocus'] = 'username';
-}
-include('header.php');
+    $loginRecoveryLink = "";
+    $passwordRecoveryLink = "";
+    $registeryLink = "";
 
+    $current_lang = "en";
+    $languages = $this->getLanguageList();
+    foreach ($languages AS $lang => $current) {
+         if ($current) {
+             $current_lang = $lang;
+         }
+    } 
+    // if ($_GET['language'] == 'en') {
+    if ($current_lang == 'en') {
+        $switch_lang = 'cs';
+        //$remember_me = "Remember me";
+        //$password_forgot = "Forgot your password?";
+        //$institution_login = "Institution login";
+    } else {
+        $switch_lang = 'en';
+        //$remember_me = "Zapamatuj si mě";
+        //$password_forgot = "Zapomněli jste heslo?";
+        //$institution_login = "Jednotné přihlášení";
+    }
+    $params = array('language' => $switch_lang);
+    foreach ($this->data['stateparams'] as $name => $value) {
+        $params[$name] = $value;
+    }
+    // $href = htmlspecialchars(SimpleSAML_Utilities::addURLparameter(SimpleSAML_Utilities::selfURL(), array('language' => $switch_lang)));
+    $href = htmlspecialchars(SimpleSAML_Utilities::addURLparameter(SimpleSAML_Utilities::selfURL(), $params));
+    $img = SimpleSAML_Module::getModuleURL('xcncip2/'.$switch_lang.'.gif');
+    //$lang = "<a href='$href'> <img src='$img' /> </a>";
+    $lang = "<a href='$href'> <img align='right' src='$img'/> </a>";
+    /* $login_str = $this->t('{login:username}') . "&nbsp;<a href='http://www.mzk.cz/sluzby/navody/jak-se-prihlasit-do-katalogu'" 
+       ."target='_blank' style='text-decoration: none;'>(" . $this->t('{login:help}') . ")</a>"; Nápověda link */
+
+    $login_str = ($current_lang == 'en')?"Username":"Uživatelské jméno";
+
+    $error = false;
+    $content = trim(file_get_contents("/data/www/idps-hosted/maintenance.txt"));
+    if ($content != "") {
+       $error = true;
+       $error_str = "{login:maintenance_in_progress}"; // "You can't login at this time. Maintenance in progress.";
+    }
 ?>
 
-<?php
-if ($this->data['errorcode'] !== NULL) {
-?>
-	<div style="border-left: 1px solid #e8e8e8; border-bottom: 1px solid #e8e8e8; background: #f5f5f5">
-		<img src="/<?php echo $this->data['baseurlpath']; ?>resources/icons/experience/gtk-dialog-error.48x48.png" class="float-l erroricon" style="margin: 15px " />
-		<h2><?php echo $this->t('{login:error_header}'); ?></h2>
-		<p><b><?php echo htmlspecialchars($this->t('{errors:title_' . $this->data['errorcode'] . '}', $this->data['errorparams'])); ?></b></p>
-		<p><?php echo htmlspecialchars($this->t('{errors:descr_' . $this->data['errorcode'] . '}', $this->data['errorparams'])); ?></p>
+<div class="container">
+	<div class="login-header">
+		<!-- <p class="lng-switch"><?php echo $lang ?></p> -->
 	</div>
-<?php
-}
-?>
-	<h2 style="break: both" id="fullname"></h2>
+	<div id="login">
+		
+		<form name="loginform" id="loginform" action="?" method="post">			
+				<p>
+					<img src="<?php echo SimpleSAML_Module::getModuleURL('xcncip2/logo.png'); ?>" height="40" align="bottom" alt="logo"/>
+					<span align='right'><?php echo $lang; ?></span>
+				</p>
+				<!-- <p><?php echo $lang ?></p> -->
+				<p><h1><?php echo $this->t('{login:institution_login}'); ?></h1></p>
+                                <?php if($error) {
+                                ?>
+                                <p style="color:#EF406B;">
+                                   <h3 style="color:#EF406B;"><?php echo $this->t($error_str);?> </br> <?php echo $error_str_add; ?> </h3>
+                                <p>
+                                <?php } else { ?>
+				<div class="loginform-wrapper">
+				<p>
+					<label><?php echo $login_str; ?><br />					
+					<input type="text" name="username" id="username" class="input" <?php if (isset($this->data['username'])) { echo 'value="' . htmlspecialchars($this->data['username']) . '"'; } ?> size="20" tabindex="10" /></label>
+				</p>
+				
+				<p>
+					<label><?php echo $this->t('{login:password}'); ?><br />
+					<input type="password" name="password" id="user_pass" class="input" value="" size="20" tabindex="20" /></label>
+				</p>
+				
+				<p><label><input name="rememberme" type="checkbox" id="rememberme" value="forever" tabindex="90" /><?php echo $this->t('{login:remember_me}'); ?> </label></p>
+				
+				<div class="login-btn">
+					<input class="btn-large" type="submit" name="wp-submit" id="wp-submit" value="<?php echo $this->t('{login:login_button}'); ?> &raquo;" tabindex="100" />
+					<?php if (!empty($registeryLink)): ?>
+						<a class="btn" href="<?php echo $registeryLink ?>" title="Nejste u nás zaregistrovaní? Přejděte na online předregistraci"><?php echo $this->t('{login:registration}'); ?>&nbsp;&raquo;</a>
+					<?php endif; ?>
+				</div>
 
-	<p class="logintext"><?php echo $this->t('{login:user_pass_text}'); ?></p>
 
-	<form action="?" method="post" name="f">
-	<table>
-		<tr>
-			<td rowspan="3"><img src="/<?php echo $this->data['baseurlpath']; ?>resources/icons/experience/gtk-dialog-authentication.48x48.png" id="loginicon" alt="" /></td>
-			<td style="padding: .3em;"><?php echo $this->t('{login:username}'); ?></td>
-
+	<?php
+	if ($this->data['errorcode'] !== NULL) {
+	?>
+		<div id="error">
+			<img src="/<?php echo $this->data['baseurlpath']; ?>resources/icons/experience/gtk-dialog-error.48x48.png" style="float: right; margin: 15px " />
+			<h2><?php echo $this->t('{login:error_header}'); ?></h2>
+			<p style="clear: both"><b><?php echo $this->t('{errors:title_' . $this->data['errorcode'] . '}'); ?></b></p>
+			<p><?php echo $this->t('{errors:descr_' . $this->data['errorcode'] . '}'); ?></p>
+			<!--
+			<table>
+			<tr>
 			<td>
-<?php
-if ($this->data['forceUsername']) {
-	echo '<strong style="font-size: medium">' . htmlspecialchars($this->data['username']) . '</strong>';
-} else {
-	echo '<input type="text" id="username" tabindex="1" name="username" value="' . htmlspecialchars($this->data['username']) . '" />';
-}
-?>
-			</td>
-<?php
-if ($this->data['rememberUsernameEnabled'] || $this->data['rememberMeEnabled']) {
-	$rowspan = 1;
-} elseif (array_key_exists('organizations', $this->data)) {
-	$rowspan = 3;
-} else {
-	$rowspan = 2;
-}
-?>
-			<td style="padding: .4em;" rowspan="<?php echo $rowspan; ?>">
-<?php
-if ($this->data['rememberUsernameEnabled'] || $this->data['rememberMeEnabled']) {
-    if ($this->data['rememberUsernameEnabled']) {
-        echo str_repeat("\t", 4);
-        echo '<input type="checkbox" id="remember_username" tabindex="4" name="remember_username" value="Yes" ';
-        echo ($this->data['rememberUsernameChecked'] ? 'checked="Yes" /> ' : '/> ');
-        echo $this->t('{login:remember_username}');
-    }
-    if ($this->data['rememberMeEnabled']) {
-        echo str_repeat("\t", 4);
-        echo '<input type="checkbox" id="remember_me" tabindex="4" name="remember_me" value="Yes" ';
-        echo $this->data['rememberMeChecked'] ? 'checked="Yes" /> ' : '/> ';
-        echo $this->t('{login:remember_me}');
-    }
-} else {
-	$text = $this->t('{login:login_button}');
-	echo str_repeat("\t", 4);
-	echo "<input type=\"submit\" tabindex=\"4\" id=\"regularsubmit\" value=\"{$text}\" />";
-}
-?>
-			</td>
-		</tr>
-		<tr>
-			<td style="padding: .3em;"><?php echo $this->t('{login:password}'); ?></td>
-			<td><input id="password" type="password" tabindex="2" name="password" /></td>
-<?php
-// Move submit button to next row if remember checkbox enabled
-if ($this->data['rememberUsernameEnabled'] || $this->data['rememberMeEnabled']) {
-	$rowspan = (array_key_exists('organizations', $this->data) ? 2 : 1);
-?>
-			<td style="padding: .4em;" rowspan="<?php echo $rowspan; ?>">
-				<input type="submit" tabindex="5" id="regularsubmit" value="<?php echo $this->t('{login:login_button}'); ?>" />
-			</td>
-<?php
-}
-?>
-		</tr>
+			<p class="cervene_pozadi"> 
+				<a href="http://aleph.mzk.cz/cgi-bin/login_recovery.pl" style="text-decoration: none;"><?php echo $this->t('{login:forgotten_login}'); ?></a></p>
+			</td><td><p class="cervene_pozadi">
+				<a href="https://aleph.mzk.cz/cgi-bin/password_recovery.pl" style="text-decoration: none;"><?php echo $this->t('{login:password_recovery}'); ?></a></p>
+				</td> 
+			</tr>                  
+					</table>
+			-->
+		</div>
+	<?php
+	}
+        ?>
 
-<?php
-if (array_key_exists('organizations', $this->data)) {
-?>
-		<tr>
-			<td style="padding: .3em;"><?php echo $this->t('{login:organization}'); ?></td>
-			<td><select name="organization" tabindex="3">
-<?php
-if (array_key_exists('selectedOrg', $this->data)) {
-	$selectedOrg = $this->data['selectedOrg'];
-} else {
-	$selectedOrg = NULL;
-}
+		<?php if (!empty($loginRecoveryLink) || !empty($passwordRecoveryLink)): ?>
+			<div class="service-btn">
+				<?php if (!empty($loginRecoveryLink)): ?>
+					<a class="btn" href="<?php echo $loginRecoveryLink ?>"><?php echo $this->t('{login:forgotten_login}'); ?></a>
+				<?php endif; ?>
+				<?php if (!empty($passwordRecoveryLink)): ?>
+					<a class="btn" href="<?php echo $passwordRecoveryLink ?>"><?php echo $this->t('{login:password_recovery}'); ?></a>
+				<?php endif; ?>
+			</div>
+		<?php endif; ?>
+			<!--</div>-->
+	</div>
 
-foreach ($this->data['organizations'] as $orgId => $orgDesc) {
-	if (is_array($orgDesc)) {
-		$orgDesc = $this->t($orgDesc);
+			<div class="login-footer">
+				<p><?php echo $this->t('{login:login_comment}'); ?></p>
+			</div>
+                        <?php } ?>			
+
+	<?php
+	if(!empty($this->data['links'])) {
+		echo '<ul class="links" style="margin-top: 2em">';
+		foreach($this->data['links'] AS $l) {
+			echo '<li><a href="' . htmlspecialchars($l['href']) . '">' . htmlspecialchars($this->t($l['text'])) . '</a></li>';
+		}
+		echo '</ul>';
 	}
 
-	if ($orgId === $selectedOrg) {
-		$selected = 'selected="selected" ';
-	} else {
-		$selected = '';
+
+
+	?>
+	<!-- 
+		<?php if (isset($this->data['error'])) { ?>
+			<div id="error">
+			<img src="/<?php echo $this->data['baseurlpath']; ?>resources/icons/experience/gtk-dialog-error.48x48.png" style="float: left; margin: 15px " />
+			<h2><?php echo $this->t('{error:error_header}'); ?></h2>
+			
+			<p style="padding: .2em"><?php echo $this->t($this->data['error']); ?> </p>fdajflajdlfjaldfsjla
+			<table>
+			<tr>
+			<td>
+			<p class="cervene_pozadi"> 
+				<a href="http://aleph.mzk.cz/cgi-bin/login_recovery.pl" style="text-decoration: none;">Neznám číslo nebo přezdívku</a></p>
+			</td><td><p class="cervene_pozadi">
+				<a href="https://aleph.mzk.cz/cgi-bin/password_recovery.pl" style="text-decoration: none;">Neznám heslo</a></p>
+				</td> 
+			</tr>                  
+					</table>  
+			</div>
+		<?php } ?>
+	 -->	
+	<?php
+	foreach ($this->data['stateparams'] as $name => $value) {
+		echo('<input type="hidden" name="' . htmlspecialchars($name) . '" value="' . htmlspecialchars($value) . '" />');
 	}
+	?>
+			
+		</form>
+	</div>
+</div>
 
-	echo '<option ' . $selected . 'value="' . htmlspecialchars($orgId) . '">' . htmlspecialchars($orgDesc) . '</option>';
-}
-?>
-			</select></td>
-		</tr>
-<?php
-}
-?>
-	<tr><td></td><td>
-	<input type="submit" tabindex="5" id="mobilesubmit" value="<?php echo $this->t('{login:login_button}'); ?>" />
-	</td></tr>
-	</table>
-<?php
-foreach ($this->data['stateparams'] as $name => $value) {
-	echo('<input type="hidden" name="' . htmlspecialchars($name) . '" value="' . htmlspecialchars($value) . '" />');
-}
-?>
-
-	</form>
 
 <?php
+/*
 
-if(!empty($this->data['links'])) {
-	echo '<ul class="links" style="margin-top: 2em">';
-	foreach($this->data['links'] AS $l) {
-		echo '<li><a href="' . htmlspecialchars($l['href']) . '">' . htmlspecialchars($this->t($l['text'])) . '</a></li>';
+	$includeLanguageBar = TRUE;
+	if (!empty($_POST)) 
+		$includeLanguageBar = FALSE;
+	if (isset($this->data['hideLanguageBar']) && $this->data['hideLanguageBar'] === TRUE) 
+		$includeLanguageBar = FALSE;
+	
+	if ($includeLanguageBar) {
+		
+
+		echo '<div id="languagebar">';		
+		
+		// echo '<form action="' . SimpleSAML_Utilities::selfURL() . '" method="get">';
+		// echo '<select name="language">';
+		// echo '</select>';
+		// echo '</form>';
+		
+		$languages = $this->getLanguageList();
+		$langnames = array(
+			'en' => 'English',
+			'de' => 'Deutsch', 
+			'cs' => 'Czech',
+		);
+		
+		$textarray = array();
+		foreach ($languages AS $lang => $current) {
+			if ($current) {
+				$textarray[] = $langnames[$lang];
+			} else {
+				$textarray[] = '<a href="' . htmlspecialchars(
+						SimpleSAML_Utilities::addURLparameter(
+							SimpleSAML_Utilities::selfURL(), array('language' => $lang)
+						)
+				) . '">' . $langnames[$lang] . '</a>';
+			}
+		}
+		echo join(' | ', $textarray);
+		echo '</div>';
 	}
-	echo '</ul>';
-}
+*/
+?>
 
-
-
-
-echo('<h2 class="logintext">' . $this->t('{login:help_header}') . '</h2>');
-echo('<p class="logintext">' . $this->t('{login:help_text}') . '</p>');
-
-$this->includeAtTemplateBase('includes/footer.php');
+</body>
+</html>
