@@ -50,19 +50,15 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 				);
 		if (!empty($id)) {
 
-			$userId = (String) $response->xpath(
-					'ns1:LookupUserResponse/ns1:UserId/ns1:UserIdentifierValue')[0];
+			$userId = trim((String) $response->xpath(
+					'ns1:LookupUserResponse/ns1:UserId/ns1:UserIdentifierValue')[0]);
 
 			if(empty($userId)) {
 				throw new Exception('UserId was not found - cannot continue without user\'s Institution Id Number');
 			}
 
-			$agencyId = (String) $response->xpath(
-					'ns1:LookupUserResponse/ns1:UserId/ns1:AgencyId')[0];
-
-			if(empty($agencyId)) {
-				throw new Exception('AgencyId was not found - cannot continue authenticating without SIGLA');
-			}
+			$agencyId = trim((String) $response->xpath(
+					'ns1:LookupUserResponse/ns1:UserId/ns1:AgencyId')[0]);
 
 			$electronicAddresses = $response->xpath(
 					'ns1:LookupUserResponse/ns1:UserOptionalFields/ns1:UserAddressInformation/ns1:ElectronicAddress'
@@ -71,32 +67,72 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 			$mail = $tel = null;
 			foreach ($electronicAddresses as $recent) {
 				if (strpos((String) $recent->xpath('ns1:ElectronicAddressType')[0], 'mail') !== FALSE) {
-					$mail = (String) $recent->xpath('ns1:ElectronicAddressData')[0];
+					$mail = trim((String) $recent->xpath('ns1:ElectronicAddressData')[0]);
 				} else if (strpos((String) $recent->xpath('ns1:ElectronicAddressType')[0], 'tel') !== FALSE) {
-					$tel = (String) $recent->xpath('ns1:ElectronicAddressData')[0];
+					$tel = trim((String) $recent->xpath('ns1:ElectronicAddressData')[0]);
 				}
 			}
 
-			$firstname = (String) $response->xpath(
+			$firstname = trim((String) $response->xpath(
 					'ns1:LookupUserResponse/ns1:UserOptionalFields/ns1:NameInformation/' .
-					'ns1:PersonalNameInformation/ns1:StructuredPersonalUserName/ns1:GivenName')[0];
+					'ns1:PersonalNameInformation/ns1:StructuredPersonalUserName/ns1:GivenName')[0]);
 
-			$lastname = (String) $response->xpath(
+			$lastname = trim((String) $response->xpath(
 					'ns1:LookupUserResponse/ns1:UserOptionalFields/ns1:NameInformation/' .
-					'ns1:PersonalNameInformation/ns1:StructuredPersonalUserName/ns1:Surname')[0];
+					'ns1:PersonalNameInformation/ns1:StructuredPersonalUserName/ns1:Surname')[0]);
 
-			$privilegeType = (String) $response->xpath(
-					'ns1:LookupUserResponse/ns1:UserOptionalFields/ns1:UserPrivilege/ns1:AgencyUserPrivilegeType')[0];
+			$unstructuredName = trim((String) $response->xpath(
+					'ns1:LookupUserResponse/ns1:UserOptionalFields/ns1:NameInformation/' .
+					'ns1:PersonalNameInformation/ns1:UnstructuredPersonalUserName')[0]);
+
+			$academicDegrees = [];
+
+			if (! empty($unstructuredName)) {
+
+				// Assume the last word is firstname, all other words are part of lastname
+				$names = preg_split('/[\s,]+/', $unstructuredName);
+
+				// Look for academic degrees
+				$i = 0;
+				foreach($names as $name) {
+					if (preg_match('/\w+\.|^et$/', $name)) {
+						$academicDegrees[] = $name;
+						unset($names[$i]);
+					}
+					++$i;
+				}
+
+				if (empty($firstname)) {
+					$firstname = $names[count($names) - 1];
+				}
+
+				unset($names[count($names) - 1]);
+
+				if (empty($lastname)) {
+					$lastname = implode(' ', $names);
+				}
+			}
+
+			$academicDegreesWordy = array_reduce($academicDegrees, function($a, $b) { return $a . ' ' . $b; });
+
+			$privilegeType = trim((String) $response->xpath(
+						'ns1:LookupUserResponse/ns1:UserOptionalFields/ns1:UserPrivilege/ns1:AgencyUserPrivilegeType')[0]);
+
+			$fullname = trim($firstname . ' ' . $lastname);
+
+			if (! empty($academicDegreesWordy)) {
+				$fullname .= ' ' . $academicDegreesWordy;
+			}
 
 			$providedAttributes = array(
-					'eduPersonPrincipalName' => array($username . '@' . $this->eppnScope),
+					'eduPersonPrincipalName' => array( $username . '@' . $this->eppnScope ),
 					'eduPersonScopedAffiliation' => $this->eduPersonScopedAffiliation,
-					'userLibraryId' => array($userId),
-					'givenName' => array($firstname),
-					'sn' => array($lastname),
-					'cn' => array($firstname . ' ' . $lastname),
-					'userHomeLibrary' => array($agencyId),
-					'o' => array($this->organizationName),
+					'userLibraryId' => array( $userId ),
+					'givenName' => empty( $firstname ) ? [] : array( $firstname ),
+					'sn' => empty( $lastname ) ? [] : array( $lastname ),
+					'cn' => empty( $fullname ) ? [] : array( $fullname ),
+					'o' => empty( $this->organizationName ) ? [] : array( $this->organizationName ),
+					'userHomeLibrary' => empty( $agencyId ) ? [] : array( $agencyId ),
 					);
 
 			if ($mail !== null)
@@ -105,8 +141,11 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 			$isEmployee = false;
 			if ($privilegeType === 'S') {
 				$providedAttributes['eduPersonScopedAffiliation'][] = 'employee@' . $this->eppnScope;
+				$providedAttributes['eduPersonScopedAffiliation'][] = 'staff@' . $this->eppnScope;
 				$isEmployee = true;
 			}
+
+			$providedAttributes['eduPersonUniqueId'] = array( $userId . '@' . $this->eppnScope );
 
 			if ($isEmployee) {
 
@@ -117,8 +156,6 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 					$providedAttributes['authMail'] = array( $mail );
 
 				$providedAttributes['unstructuredName'] = array( $userId );
-
-				$providedAttributes['eduPersonUniqueId'] = array( $userId . '@' . $this->eppnScope );
 
 				$providedAttributes['eduPersonEntitlement'] = array( 'urn:mace:terena.org:tcs:escience-user' );
 
@@ -159,6 +196,10 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 			$result->registerXPathNamespace('ns1', 'http://www.niso.org/2008/ncip');
 			return $result;
 		} else {
+			/* Force the result ..
+			   $result = simplexml_load_string('INSERT YOUR NCIP RESPONSE HERE');
+			   return $result;
+			 */
 			throw new RuntimeException("Problem parsing XML");
 		}
 	}
