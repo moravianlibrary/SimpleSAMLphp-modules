@@ -40,6 +40,8 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 		$this->toAgencyId = $config['toAgencyId'];
 		$this->fromAgencyId = $config['fromAgencyId'];
 		$this->organizationName = $config['organizationName'];
+
+		$this->excludeAcademicDegrees = isset($config['excludeAcademicDegrees']) ? $config['excludeAcademicDegrees'] : false;
 	}
 
 	public function login($username, $password) {
@@ -92,14 +94,16 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 				// Assume the last word is firstname, all other words are part of lastname
 				$names = preg_split('/[\s,]+/', $unstructuredName);
 
-				// Look for academic degrees
-				$i = 0;
-				foreach($names as $name) {
-					if (preg_match('/\w+\.|^et$/', $name)) {
-						$academicDegrees[] = $name;
-						unset($names[$i]);
+				if (! $this->excludeAcademicDegrees) {
+					// Look for academic degrees
+					$i = 0;
+					foreach($names as $name) {
+						if (preg_match('/\w+\.|^et$/', $name)) {
+							$academicDegrees[] = $name;
+							unset($names[$i]);
+						}
+						++$i;
 					}
-					++$i;
 				}
 
 				if (empty($firstname)) {
@@ -113,15 +117,17 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 				}
 			}
 
-			$academicDegreesWordy = array_reduce($academicDegrees, function($a, $b) { return $a . ' ' . $b; });
-
 			$privilegeType = trim((String) $response->xpath(
 						'ns1:LookupUserResponse/ns1:UserOptionalFields/ns1:UserPrivilege/ns1:AgencyUserPrivilegeType')[0]);
 
 			$fullname = trim($firstname . ' ' . $lastname);
 
-			if (! empty($academicDegreesWordy)) {
-				$fullname .= ' ' . $academicDegreesWordy;
+			if (! $this->excludeAcademicDegrees) {
+				$academicDegreesWordy = array_reduce($academicDegrees, function($a, $b) { return $a . ' ' . $b; });
+
+				if (! empty($academicDegreesWordy)) {
+					$fullname .= ' ' . $academicDegreesWordy;
+				}
 			}
 
 			$providedAttributes = array(
