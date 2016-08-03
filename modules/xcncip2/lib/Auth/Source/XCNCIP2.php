@@ -94,16 +94,14 @@ class sspmod_xcncip2_Auth_Source_XCNCIP2 extends sspmod_core_Auth_UserPassBase {
 				// Assume the last word is firstname, all other words are part of lastname
 				$names = preg_split('/[\s,]+/', $unstructuredName);
 
-				if (! $this->excludeAcademicDegrees) {
-					// Look for academic degrees
-					$i = 0;
-					foreach($names as $name) {
-						if (preg_match('/\w+\.|^et$/', $name)) {
-							$academicDegrees[] = $name;
-							unset($names[$i]);
-						}
-						++$i;
+				// Look for academic degrees to extract those
+				$i = 0;
+				foreach($names as $name) {
+					if (preg_match('/\w+\.|^et$/', $name)) {
+						$academicDegrees[] = $name;
+						unset($names[$i]);
 					}
+					++$i;
 				}
 
 				if (empty($firstname)) {
